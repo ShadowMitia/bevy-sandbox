@@ -3,7 +3,7 @@ use bevy::prelude::*;
 struct Image;
 
 fn setup_system(
-    mut commands: Commands,
+    commands: &mut Commands,
     mut windows: ResMut<Windows>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     asset_server: Res<AssetServer>,
@@ -27,15 +27,15 @@ fn setup_system(
     let mat = materials.add(texture_handle.into());
 
     commands
-        .spawn(UiCameraComponents::default())
-        .spawn(Camera2dComponents::default());
+        .spawn(CameraUiBundle::default())
+        .spawn(Camera2dBundle::default());
 
     for j in 0..(height as u32) {
         for i in 0..(width as u32) {
             let zero_or_one = if rand::random() { 1.0 } else { 0.0 };
 
             commands
-                .spawn(SpriteComponents {
+                .spawn(SpriteBundle {
                     material: mat.clone(),
                     transform: Transform::from_translation(Vec3::new(
                         half_width - size * i as f32 - size / 2.0,
@@ -59,9 +59,9 @@ fn update_sprites(
     mut timer: ResMut<UpdateTimer>,
     mut query: Query<(&Image, &mut Transform)>,
 ) {
-    timer.0.tick(time.delta_seconds);
+    timer.0.tick(time.delta_seconds());
 
-    if timer.0.finished {
+    if timer.0.finished() {
         for (_, mut transform) in query.iter_mut() {
             let zero_or_one = if rand::random() { 1.0 } else { 0.0 };
 
@@ -76,7 +76,7 @@ fn main() {
     App::build()
         .add_plugins(DefaultPlugins)
         .add_resource(UpdateTimer(Timer::from_seconds(1.0, true)))
-        .add_startup_system(setup_system.system())
+        .add_startup_system(setup_system)
         .add_system(update_sprites.system())
         .run();
 }

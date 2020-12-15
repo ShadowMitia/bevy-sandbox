@@ -1,7 +1,8 @@
 use bevy::{
     asset::{AssetLoader, LoadContext, LoadedAsset},
     prelude::*,
-    type_registry::TypeUuid,
+    reflect::TypeUuid,
+    render::texture::{Extent3d, TextureDimension},
     utils::BoxedFuture,
 };
 
@@ -19,15 +20,15 @@ struct RedditHandles {
 }
 
 fn setup_system(
-    mut commands: Commands,
+    commands: &mut Commands,
     mut windows: ResMut<Windows>,
     links: Res<RedditImages>,
     mut textures: ResMut<Assets<Texture>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     commands
-        .spawn(UiCameraComponents::default())
-        .spawn(Camera2dComponents::default());
+        .spawn(Camera2dBundle::default())
+        .spawn(Camera2dBundle::default());
 
     let window = windows.get_primary_mut().unwrap();
     window.set_title("Reddit images".to_string());
@@ -66,7 +67,7 @@ fn setup_system(
             // let zero_or_one = if rand::random() { 1.0 } else { 0.0 };
             let mat = mats.choose(&mut rand::thread_rng()).unwrap().clone();
             commands
-                .spawn(SpriteComponents {
+                .spawn(SpriteBundle {
                     material: mat.clone(),
                     transform: Transform::from_translation(Vec3::new(
                         half_width - size * i as f32 - size / 2.0,
@@ -100,7 +101,7 @@ async fn get_texture_from_url(url: &str) -> Option<Texture> {
     println!("getting {}", url);
     let bytes = reqwest::get(url).await.unwrap().bytes().await.unwrap();
     let image = match image::load_from_memory(&bytes) {
-        Ok(image) => image.to_rgba(),
+        Ok(image) => image.to_rgba8(),
         Err(_) => return None,
     };
 
@@ -108,7 +109,12 @@ async fn get_texture_from_url(url: &str) -> Option<Texture> {
     let height = image.height();
     let data = image.into_vec();
     Some(Texture::new(
-        Vec2::new(width as f32, height as f32),
+        Extent3d {
+            width,
+            height,
+            depth: 1,
+        },
+        TextureDimension::D2,
         data,
         bevy::render::texture::TextureFormat::Rgba8Unorm,
     ))
@@ -166,7 +172,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .init_asset_loader::<JpegAssetLoader>()
         .add_resource(RedditImages { images })
         // .add_resource(UpdateTimer(Timer::from_seconds(1.0, true)))
-        .add_startup_system(setup_system.system())
+        .add_startup_system(setup_system)
         // .add_system(update_sprites.system())
         .run();
 
@@ -188,14 +194,19 @@ impl AssetLoader for JpegAssetLoader {
     ) -> BoxedFuture<'a, Result<(), anyhow::Error>> {
         Box::pin(async move {
             let dyn_img =
-                image::load_from_memory_with_format(bytes, image::ImageFormat::Jpeg)?.to_rgba();
+                image::load_from_memory_with_format(bytes, image::ImageFormat::Jpeg)?.to_rgba8();
 
             let width = dyn_img.width();
             let height = dyn_img.height();
             let data = dyn_img.to_vec();
 
             let custom_asset = Texture::new(
-                Vec2::new(width as f32, height as f32),
+                Extent3d {
+                    width,
+                    height,
+                    depth: 1,
+                },
+                TextureDimension::D2,
                 data,
                 bevy::render::texture::TextureFormat::Rgba8Unorm,
             );
