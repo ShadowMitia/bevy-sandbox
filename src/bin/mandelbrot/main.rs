@@ -85,14 +85,14 @@ fn mandelbrot_generation_system(
                 ((i as f32 / max_iterations as f32) * 255.0) as u8,
                 ((i as f32 / max_iterations as f32) * 255.0) as u8,
                 ((i as f32 / max_iterations as f32) * 255.0) as u8,
-                255 as u8,
+                255_u8,
             ]);
         } else {
             *pixel = image::Rgba([
                 ((x as f32 / width as f32) * 255.0) as u8,
                 ((x as f32 / width as f32) * 255.0) as u8,
                 ((y as f32 / height as f32) * 255.0) as u8,
-                255 as u8,
+                255_u8,
             ]);
         }
     }
