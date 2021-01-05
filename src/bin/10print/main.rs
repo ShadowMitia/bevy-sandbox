@@ -76,7 +76,7 @@ fn main() {
     App::build()
         .add_plugins(DefaultPlugins)
         .add_resource(UpdateTimer(Timer::from_seconds(1.0, true)))
-        .add_startup_system(setup_system)
+        .add_startup_system(setup_system.system())
         .add_system(update_sprites.system())
         .run();
 }

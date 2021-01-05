@@ -172,7 +172,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .init_asset_loader::<JpegAssetLoader>()
         .add_resource(RedditImages { images })
         // .add_resource(UpdateTimer(Timer::from_seconds(1.0, true)))
-        .add_startup_system(setup_system)
+        .add_startup_system(setup_system.system())
         // .add_system(update_sprites.system())
         .run();
 

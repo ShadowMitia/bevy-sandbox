@@ -1,0 +1,65 @@
+#+title: Program examples and tests using Bevy engine.
+
+** Program list
+
+*** 10Print
+
+[[./images/10print.webm]]
+
+Run with :
+
+#+begin_src sh
+cargo run --bin 10print
+#+end_src
+
+*** Simple AABB-collision example (detection and resolution)
+
+Run with :
+
+#+begin_src sh
+cargo run --bin aabb_collisions
+#+end_src
+
+*** Boids
+
+A 2D boids "flocking" simulation as seen [[here][http://www.cs.toronto.edu/~dt/siggraph97-course/cwr87/#foot2]]
+Uses a quadtree to deal with spatial partitionning.
+
+
+References:
+- https://p5js.org/examples/simulate-flocking.html
+- https://thecodingtrain.com/CodingChallenges/124-flocking-boids.html
+- https://www.youtube.com/watch?v=bqtqltqcQhw
+
+
+Run with :
+
+#+begin_src sh
+cargo run --bin boids
+#+end_src
+
+*** Mandelbrot
+
+Generates a single image of the mandelbrot fractal.
+
+[[./images/mandelbrot.png]]
+
+Run with :
+
+#+begin_src sh
+cargo run --bin mandelbrot
+#+end_src
+
+*** shaders : couple of shader examples and shader hot reloading
+
+Implemented shaders:
+- Phong
+- BlinnPhong
+- Toon
+- color (applies just a color to the object)
+
+Run with :
+
+#+begin_src sh
+cargo run --bin shaders
+#+end_src

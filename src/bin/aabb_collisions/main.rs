@@ -221,8 +221,8 @@ fn main() {
     App::build()
         .add_resource(ClearColor(Color::rgb(0.0, 0.0, 0.0)))
         .add_plugins(DefaultPlugins)
-        .add_startup_system(setup)
-        .add_system(pacman_movement)
-        .add_system(pacman_collision)
+        .add_startup_system(setup.system())
+        .add_system(pacman_movement.system())
+        .add_system(pacman_collision.system())
         .run();
 }

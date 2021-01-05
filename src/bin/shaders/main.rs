@@ -21,7 +21,7 @@ fn main() {
         .add_asset::<ToonMaterial>()
         .add_asset::<PhongMaterial>()
         .add_asset::<BlinnPhongMaterial>()
-        .add_startup_system(setup)
+        .add_startup_system(setup_system.system())
         .run();
 }
 
@@ -30,7 +30,7 @@ fn main() {
     NOTE: Such as with bevy's "shader defs"
     NOTE: This is fine for learning purposes, and having shader building blocks
     NOTE: But probably not the most efficient! (Or practical to store in assets)
-    
+
 */
 
 #[derive(RenderResources, Default, TypeUuid)]
@@ -85,7 +85,7 @@ fn build_shader_pipeline<T: bevy::render::renderer::RenderResources + bevy::refl
     pipeline_handle
 }
 
-fn setup(
+fn setup_system(
     commands: &mut Commands,
     mut asset_server: ResMut<AssetServer>,
     mut pipelines: ResMut<Assets<PipelineDescriptor>>,
