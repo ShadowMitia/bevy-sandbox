@@ -120,6 +120,7 @@ async fn get_texture_from_url(url: &str) -> Option<Texture> {
     ))
 }
 
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let subbreddit = roux::Subreddit::new("aww");
