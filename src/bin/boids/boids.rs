@@ -40,8 +40,8 @@ impl Boids {
         }
     }
 
-    const MAX_SPEED: f32 = 10.0;
-    const MAX_FORCE: f32 = 0.5;
+    const MAX_SPEED: f32 = 8.0;
+    const MAX_FORCE: f32 = 1.0;
 
     fn separate(velocities: &[Vec2], positions: &[Vec2]) -> Vec<Vec2> {
         let desired_seperation = 25.0;
@@ -83,7 +83,7 @@ impl Boids {
     }
 
     fn align(velocities: &[Vec2], positions: &[Vec2]) -> Vec<Vec2> {
-        let neighbor_dist = 50.0;
+        let neighbor_dist = 100.0;
 
         let mut aligns = Vec::new();
 
@@ -119,7 +119,7 @@ impl Boids {
     }
 
     fn cohesion(velocities: &[Vec2], positions: &[Vec2]) -> Vec<Vec2> {
-        let neighbor_dist = 50.0;
+        let neighbor_dist = 75.0;
 
         let mut cohesions = Vec::new();
 
