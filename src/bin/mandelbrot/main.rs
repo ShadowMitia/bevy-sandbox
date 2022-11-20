@@ -1,8 +1,8 @@
-use bevy::{
-    prelude::*,
-    render::texture::{Extent3d, TextureFormat},
-    DefaultPlugins,
-};
+use bevy::prelude::*;
+use bevy::render::render_resource::Extent3d;
+use bevy::render::render_resource::TextureDimension;
+use bevy::render::render_resource::TextureFormat;
+
 use image::ImageBuffer;
 use num_complex::Complex32;
 
@@ -41,16 +41,13 @@ fn mandelbrot(zn: Complex32, c: Complex32) -> Complex32 {
     zn * zn + c
 }
 
-fn setup(commands: &mut Commands) {
-    commands
-        .spawn(Camera2dBundle::default())
-        .spawn(CameraUiBundle::default());
-}   
+fn setup(mut commands: Commands) {
+    commands.spawn(Camera2dBundle::default());
+}
 
 fn mandelbrot_generation_system(
-    commands: &mut Commands,
-    mut materials: ResMut<Assets<ColorMaterial>>,
-    mut textures: ResMut<Assets<Texture>>,
+    mut commands: Commands,
+    mut images: ResMut<Assets<Image>>,
     window: Res<Windows>,
 ) {
     let mandelbrot = Mandelbrot::new();
@@ -97,36 +94,33 @@ fn mandelbrot_generation_system(
         }
     }
 
-    let texture = Texture::new(
+    let tex = Image::new_fill(
         Extent3d {
             width,
             height,
-            depth: 1,
+            depth_or_array_layers: 1,
         },
-        bevy::render::texture::TextureDimension::D2,
-        image.into_raw(),
-        TextureFormat::Rgba8UnormSrgb,
+        TextureDimension::D2,
+        &image,
+        TextureFormat::Rgba8Unorm,
     );
-
-    let handle = textures.add(texture);
-
-    let material = ColorMaterial {
-        texture: Some(handle),
-        ..Default::default()
-    };
+    let image = images.add(tex);
 
     commands.spawn(SpriteBundle {
-        sprite: Sprite::new(Vec2::new(width as f32, height as f32)),
-        material: materials.add(material),
+        sprite: Sprite {
+            custom_size: Some(Vec2::new(width as f32, height as f32)),
+            ..Default::default()
+        },
+        texture: image,
         transform: Transform::from_translation(Vec3::new(0.0, 0.0, 0.0)),
         ..Default::default()
     });
 }
 
 fn main() {
-    App::build()
+    App::new()
         .add_plugins(DefaultPlugins)
-        .add_startup_system(setup.system())
-        .add_startup_system(mandelbrot_generation_system.system())
+        .add_startup_system(setup)
+        .add_startup_system(mandelbrot_generation_system)
         .run();
 }

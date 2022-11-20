@@ -1,72 +1,101 @@
 use bevy::{prelude::*, sprite::collide_aabb::Collision};
 
-
-fn setup(commands: &mut Commands, mut materials: ResMut<Assets<ColorMaterial>>) {
-    let blue = Color::BLUE;
-
-    let _pink = Color::PINK;
-
-    commands
-        .spawn(Camera2dBundle::default())
-        .spawn(CameraUiBundle::default())
-        .spawn(SpriteBundle {
-            material: materials.add(Color::rgb(1.0, 1.0, 0.0).into()),
+fn setup(mut commands: Commands) {
+    commands.spawn(Camera2dBundle::default());
+    commands.spawn((
+        SpriteBundle {
             transform: Transform::from_translation(Vec3::new(0.0, 0.0, 0.0)),
-            sprite: Sprite::new(Vec2::new(32.0, 32.0)),
+            sprite: Sprite {
+                custom_size: Some(Vec2::new(32.0, 32.0)),
+                color: Color::rgb(1.0, 1.0, 0.0),
+                ..Default::default()
+            },
             ..Default::default()
-        })
-        .with(Pacman {
+        },
+        Pacman {
             velocity: Vec2::new(0.0, 0.0),
-        })
-        .spawn(SpriteBundle {
-            material: materials.add(blue.into()),
+        },
+    ));
+    commands.spawn((
+        SpriteBundle {
             transform: Transform::from_translation(Vec3::new(100.0, 0.0, 0.0)),
-            sprite: Sprite::new(Vec2::new(32.0, 32.0)),
+            sprite: Sprite {
+                custom_size: Some(Vec2::new(32.0, 32.0)),
+                color: Color::BLUE,
+                ..Default::default()
+            },
             ..Default::default()
-        })
-        .with(Wall)
-        .spawn(SpriteBundle {
-            material: materials.add(blue.into()),
-            transform: Transform::from_translation(Vec3::new(-100.0, 0.0, 0.0)),
-            sprite: Sprite::new(Vec2::new(32.0, 32.0)),
-            ..Default::default()
-        })
-        .with(Wall)
+        },
+        Wall,
+    ));
+    commands
+        .spawn((
+            SpriteBundle {
+                transform: Transform::from_translation(Vec3::new(-100.0, 0.0, 0.0)),
+                sprite: Sprite {
+                    custom_size: Some(Vec2::new(32.0, 32.0)),
+                    color: Color::BLUE,
+                    ..Default::default()
+                },
+                ..Default::default()
+            },
+            Wall,
+        ))
         .with_children(|commands| {
             commands.spawn(SpriteBundle {
-                material: materials.add(_pink.into()),
                 transform: Transform::from_translation(Vec3::new(0.0, 0.0, 1.0)),
-                sprite: Sprite::new(Vec2::new(16.0, 16.0)),
+                sprite: Sprite {
+                    custom_size: Some(Vec2::new(32.0, 32.0)),
+                    color: Color::PINK,
+                    ..Default::default()
+                },
                 ..Default::default()
             });
-        })
-        .spawn(SpriteBundle {
-            material: materials.add(blue.into()),
+        });
+    commands.spawn((
+        SpriteBundle {
             transform: Transform::from_translation(Vec3::new(-300.0, 0.0, 0.0)),
-            sprite: Sprite::new(Vec2::new(3.0, 200.0)),
+            sprite: Sprite {
+                custom_size: Some(Vec2::new(32.0, 32.0)),
+                color: Color::BLUE,
+                ..Default::default()
+            },
             ..Default::default()
-        })
-        .with(Wall)
-        .spawn(SpriteBundle {
-            material: materials.add(blue.into()),
+        },
+        Wall,
+    ));
+    commands.spawn((
+        SpriteBundle {
             transform: Transform::from_translation(Vec3::new(-400.0, 0.0, 0.0)),
-            sprite: Sprite::new(Vec2::new(200.0, 200.0)),
+            sprite: Sprite {
+                custom_size: Some(Vec2::new(200.0, 200.0)),
+                color: Color::BLUE,
+                ..Default::default()
+            },
             ..Default::default()
-        })
-        .with(Wall)
-        .spawn(SpriteBundle {
-            material: materials.add(_pink.into()),
+        },
+        Wall,
+    ));
+    commands.spawn((
+        SpriteBundle {
             transform: Transform::from_translation(Vec3::new(-168.0, 0.0, 0.0)),
-            sprite: Sprite::new(Vec2::new(200.0, 200.0)),
+            sprite: Sprite {
+                custom_size: Some(Vec2::new(200.0, 200.0)),
+                color: Color::PINK,
+                ..Default::default()
+            },
             ..Default::default()
-        })
-        .with(Wall);
+        },
+        Wall,
+    ));
 }
 
+#[derive(Component)]
 struct Pacman {
     velocity: Vec2,
 }
 
+#[derive(Component)]
 struct Wall;
 
 fn pacman_movement(
@@ -101,11 +130,11 @@ fn aabb_aabb_collide(one: (&Transform, &Sprite), two: (&Transform, &Sprite)) -> 
     let one_position = one.0.translation;
     let two_position = two.0.translation;
 
-    let one_size = one.1.size;
-    let two_size = two.1.size;
+    let one_size = one.1.custom_size.unwrap();
+    let two_size = two.1.custom_size.unwrap();
 
-    let one_half_size = one.1.size / 2.0;
-    let two_half_size = two.1.size / 2.0;
+    let one_half_size = one_size / 2.0;
+    let two_half_size = two_size / 2.0;
 
     let one_position = Vec3::new(
         one_position.x - one_half_size.x,
@@ -136,8 +165,8 @@ fn aabb_aabb_resolution(
     let one_position = one.0.translation;
     let two_position = two.0.translation;
 
-    let one_size = one.1.size;
-    let two_size = two.1.size;
+    let one_size = one.1.custom_size.unwrap();
+    let two_size = two.1.custom_size.unwrap();
 
     let one_half_size = Vec3::new(one_size.x / 2.0, one_size.y / 2.0, 0.0);
     let two_half_size = Vec3::new(two_size.x / 2.0, two_size.y / 2.0, 0.0);
@@ -177,9 +206,9 @@ fn aabb_aabb_resolution(
 
 fn pacman_collision(
     mut query: Query<(&mut Pacman, &mut Transform, &Sprite)>,
-    query_walls: Query<(&Wall, &Transform, &Sprite)>,
+    query_walls: Query<(&Transform, &Sprite), Without<Pacman>>,
 ) {
-    for (_, wall_transform, wall_sprite) in query_walls.iter() {
+    for (wall_transform, wall_sprite) in query_walls.iter() {
         for (mut pacman, mut pacman_transform, pacman_sprite) in query.iter_mut() {
             let collided = aabb_aabb_collide(
                 (&pacman_transform, pacman_sprite),
@@ -210,6 +239,7 @@ fn pacman_collision(
                     Collision::Bottom => {
                         pacman_transform.translation.y += diff;
                     }
+                    Collision::Inside => todo!(),
                 }
             }
         }
@@ -217,12 +247,11 @@ fn pacman_collision(
 }
 
 fn main() {
-
-    App::build()
-        .add_resource(ClearColor(Color::rgb(0.0, 0.0, 0.0)))
+    App::new()
+        .insert_resource(ClearColor(Color::rgb(0.0, 0.0, 0.0)))
         .add_plugins(DefaultPlugins)
-        .add_startup_system(setup.system())
-        .add_system(pacman_movement.system())
-        .add_system(pacman_collision.system())
+        .add_startup_system(setup)
+        .add_system(pacman_movement)
+        .add_system(pacman_collision)
         .run();
 }

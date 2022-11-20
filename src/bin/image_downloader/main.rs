@@ -2,33 +2,33 @@ use bevy::{
     asset::{AssetLoader, LoadContext, LoadedAsset},
     prelude::*,
     reflect::TypeUuid,
-    render::texture::{Extent3d, TextureDimension},
+    render::render_resource::{Extent3d, TextureDimension, TextureFormat},
     utils::BoxedFuture,
 };
 
+use futures::future::join_all;
+use rand::seq::SliceRandom;
 use serde::Deserialize;
 
-use rand::seq::SliceRandom;
+#[derive(Component)]
+struct WebImage;
 
-struct Image;
-
+#[derive(Resource)]
 struct RedditImages {
-    images: Vec<Texture>,
+    images: Vec<Image>,
 }
+
 struct RedditHandles {
-    handles: Vec<Handle<Texture>>,
+    handles: Vec<Handle<Image>>,
 }
 
 fn setup_system(
-    commands: &mut Commands,
+    mut commands: Commands,
     mut windows: ResMut<Windows>,
     links: Res<RedditImages>,
-    mut textures: ResMut<Assets<Texture>>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
+    mut textures: ResMut<Assets<Image>>,
 ) {
-    commands
-        .spawn(Camera2dBundle::default())
-        .spawn(Camera2dBundle::default());
+    commands.spawn(Camera2dBundle::default());
 
     let window = windows.get_primary_mut().unwrap();
     window.set_title("Reddit images".to_string());
@@ -49,7 +49,7 @@ fn setup_system(
     let mut handles = Vec::new();
 
     for tex in texs {
-        let texture_handle: Handle<Texture> = textures.add(tex.clone());
+        let texture_handle: Handle<Image> = textures.add(tex.clone());
         handles.push(texture_handle);
     }
 
@@ -58,26 +58,30 @@ fn setup_system(
     let images = &images.handles;
     let mut mats = Vec::new();
     for image in images {
-        let mat = ColorMaterial::texture(image.clone());
-        mats.push(materials.add(mat));
+        let mat = image.clone();
+        mats.push(mat);
     }
 
     for j in 0..(height as u32) {
         for i in 0..(width as u32) {
             // let zero_or_one = if rand::random() { 1.0 } else { 0.0 };
-            let mat = mats.choose(&mut rand::thread_rng()).unwrap().clone();
-            commands
-                .spawn(SpriteBundle {
-                    material: mat.clone(),
+            let mat = images.choose(&mut rand::thread_rng()).unwrap().clone();
+            commands.spawn((
+                SpriteBundle {
+                    texture: mat.clone(),
                     transform: Transform::from_translation(Vec3::new(
                         half_width - size * i as f32 - size / 2.0,
                         half_height - size * j as f32 - size / 2.0,
                         0.0,
                     )),
-                    sprite: Sprite::new(Vec2::new(size, size)),
+                    sprite: Sprite {
+                        custom_size: Some(Vec2::new(size, size)),
+                        ..Default::default()
+                    },
                     ..Default::default()
-                })
-                .with(Image);
+                },
+                WebImage,
+            ));
         }
     }
 }
@@ -97,7 +101,7 @@ fn setup_system(
 //     }
 // }
 
-async fn get_texture_from_url(url: &str) -> Option<Texture> {
+async fn get_texture_from_url(url: &str) -> Option<Image> {
     println!("getting {}", url);
     let bytes = reqwest::get(url).await.unwrap().bytes().await.unwrap();
     let image = match image::load_from_memory(&bytes) {
@@ -108,18 +112,17 @@ async fn get_texture_from_url(url: &str) -> Option<Texture> {
     let width = image.width();
     let height = image.height();
     let data = image.into_vec();
-    Some(Texture::new(
+    Some(Image::new_fill(
         Extent3d {
             width,
             height,
-            depth: 1,
+            ..Default::default()
         },
         TextureDimension::D2,
-        data,
-        bevy::render::texture::TextureFormat::Rgba8Unorm,
+        &data,
+        TextureFormat::Rgba8Unorm,
     ))
 }
-
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -150,7 +153,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         ));
     }
 
-    let items = futures::future::join_all(tasks).await;
+    println!("joining...");
+    let items = join_all(tasks).await;
+    println!("done!");
     let items = items.into_iter().filter(|a| a.is_ok());
 
     let mut images = Vec::new();
@@ -167,13 +172,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         images.push(res);
     }
 
-    App::build()
+    App::new()
         .add_plugins(DefaultPlugins)
         .add_asset::<JpegAsset>()
         .init_asset_loader::<JpegAssetLoader>()
-        .add_resource(RedditImages { images })
+        .insert_resource(RedditImages { images })
         // .add_resource(UpdateTimer(Timer::from_seconds(1.0, true)))
-        .add_startup_system(setup_system.system())
+        .add_startup_system(setup_system)
         // .add_system(update_sprites.system())
         .run();
 
@@ -190,6 +195,7 @@ pub struct JpegAssetLoader;
 impl AssetLoader for JpegAssetLoader {
     fn load<'a>(
         &'a self,
+
         bytes: &'a [u8],
         load_context: &'a mut LoadContext,
     ) -> BoxedFuture<'a, Result<(), anyhow::Error>> {
@@ -201,15 +207,15 @@ impl AssetLoader for JpegAssetLoader {
             let height = dyn_img.height();
             let data = dyn_img.to_vec();
 
-            let custom_asset = Texture::new(
+            let custom_asset = Image::new_fill(
                 Extent3d {
                     width,
                     height,
-                    depth: 1,
+                    depth_or_array_layers: 1,
                 },
                 TextureDimension::D2,
-                data,
-                bevy::render::texture::TextureFormat::Rgba8Unorm,
+                &data,
+                TextureFormat::Rgba8Unorm,
             );
             load_context.set_default_asset(LoadedAsset::new(custom_asset));
             Ok(())

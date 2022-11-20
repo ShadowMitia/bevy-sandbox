@@ -1,8 +1,9 @@
 use bevy::prelude::*;
 
+#[derive(Resource)]
 struct GameOfLifeConfig {
-    alive_color: Handle<ColorMaterial>,
-    dead_color: Handle<ColorMaterial>,
+    alive_color: Color,
+    dead_color: Color,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -17,51 +18,52 @@ enum CellState {
     DEAD,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Component, Debug, Clone, Copy)]
 struct Cell {
     coordinate: GridCoordinate,
     state: CellState,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Resource)]
 struct Cells {
     cells: Vec<CellState>,
     width: usize,
     height: usize,
 }
 
-#[derive(Debug)]
+#[derive(Component, Debug)]
 struct CellNeighbors {
     neighbors: Vec<GridCoordinate>,
 }
 
-fn create_cell(position: Vec2, size: Vec2, color: Handle<ColorMaterial>) -> SpriteBundle {
+fn create_cell(position: Vec2, size: Vec2, color: Color) -> SpriteBundle {
     SpriteBundle {
-        sprite: Sprite::new(size),
+        sprite: Sprite {
+            custom_size: Some(size),
+            color,
+            ..Default::default()
+        },
         transform: Transform::from_translation(Vec3::new(position.x, position.y, 0.0)),
-        material: color,
         ..Default::default()
     }
 }
 
 fn setup_system(
-    commands: &mut Commands,
+    mut commands: Commands,
     mut windows: ResMut<Windows>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
+    _materials: ResMut<Assets<ColorMaterial>>,
 ) {
     let window = windows.get_primary_mut().unwrap();
     window.set_title("Game Of Life".to_string());
 
-    commands
-        .spawn(Camera2dBundle::default())
-        .spawn(CameraUiBundle::default());
+    commands.spawn(Camera2dBundle::default());
 
-    let alive_color = materials.add(ColorMaterial::color(Color::GREEN));
-    let dead_color = materials.add(ColorMaterial::color(Color::BLACK));
+    let alive_color = Color::GREEN;
+    let dead_color = Color::BLACK;
 
     commands.insert_resource(GameOfLifeConfig {
-        alive_color: alive_color.clone(),
-        dead_color: dead_color.clone(),
+        alive_color,
+        dead_color,
     });
 
     let window_width = window.width();
@@ -77,7 +79,7 @@ fn setup_system(
 
     let mut cells = Vec::with_capacity(width * height);
     cells.resize_with(width * height, || CellState::DEAD);
- 
+
     for x in 1..width - 1 {
         for y in 1..height - 1 {
             let cell = Cell {
@@ -114,20 +116,21 @@ fn setup_system(
                 })
                 .collect();
 
-            commands
-                .spawn(create_cell(
+            commands.spawn((
+                create_cell(
                     Vec2::new(
                         size.x * x as f32 - window_width / 2.0 - size.x / 2.0,
                         size.y * y as f32 - window_height / 2.0 - size.y / 2.0,
                     ),
                     size,
                     match cell.state {
-                        CellState::ALIVE => alive_color.clone(),
-                        CellState::DEAD => dead_color.clone(),
+                        CellState::ALIVE => alive_color,
+                        CellState::DEAD => dead_color,
                     },
-                ))
-                .with(cell)
-                .with(CellNeighbors { neighbors });
+                ),
+                cell,
+                CellNeighbors { neighbors },
+            ));
         }
     }
 
@@ -156,9 +159,9 @@ fn game_of_life_update_system(
     config: Res<GameOfLifeConfig>,
     mut cells: ResMut<Cells>,
     query_cells: Query<(&Cell, &CellNeighbors)>,
-    mut query_materials: Query<(&Cell, &mut Handle<ColorMaterial>)>,
+    mut query_materials: Query<(&Cell, &mut Sprite)>,
 ) {
-    update_timer.0.tick(time.delta_seconds());
+    update_timer.0.tick(time.delta());
 
     if update_timer.0.just_finished() {
         let mut new_materials = Vec::new();
@@ -182,8 +185,8 @@ fn game_of_life_update_system(
             cells.cells[y * width + x] = new_state;
 
             let material = match new_state {
-                CellState::ALIVE => config.alive_color.clone(),
-                CellState::DEAD => config.dead_color.clone(),
+                CellState::ALIVE => config.alive_color,
+                CellState::DEAD => config.dead_color,
             };
 
             new_materials.push(material);
@@ -192,19 +195,20 @@ fn game_of_life_update_system(
         query_materials
             .iter_mut()
             .zip(new_materials)
-            .for_each(|((_, mut material), mat)| *material = mat);
+            .for_each(|((_, mut material), mat)| material.color = mat);
     }
 }
 
+#[derive(Resource)]
 struct UpdateTimer(Timer);
 
 #[bevy_main]
 fn main() {
-    App::build()
-        .add_resource(UpdateTimer(Timer::from_seconds(0.1, true)))
+    App::new()
+        .insert_resource(UpdateTimer(Timer::from_seconds(0.1, TimerMode::Repeating)))
         .add_plugins(DefaultPlugins)
-        .add_startup_system(setup_system.system())
-        .add_system(game_of_life_update_system.system())
+        .add_startup_system(setup_system)
+        .add_system(game_of_life_update_system)
         // .add_system(mouse_events_system.system())
         .run();
 }

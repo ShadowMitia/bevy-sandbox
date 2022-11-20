@@ -18,7 +18,7 @@ impl Boids {
         let y = rand::random::<f32>() * 2.0 - 1.0;
         let vel = Vec2::new(x, y);
         self.velocities.push(vel);
-        self.accelerations.push(Vec2::zero());
+        self.accelerations.push(Vec2::ZERO);
     }
 
     pub fn update(&mut self) {
@@ -36,7 +36,7 @@ impl Boids {
                 *velocity = velocity.normalize() * Boids::MAX_SPEED;
             }
             *position += *velocity;
-            *acceleration = Vec2::zero();
+            *acceleration = Vec2::ZERO;
         }
     }
 
@@ -49,7 +49,7 @@ impl Boids {
         let mut steers = Vec::new();
 
         for i in 0..positions.len() {
-            let mut steer = Vec2::zero();
+            let mut steer = Vec2::ZERO;
             let mut count = 0;
             for j in 0..positions.len() {
                 let dist = (positions[i] - positions[j]).length();
@@ -88,7 +88,7 @@ impl Boids {
         let mut aligns = Vec::new();
 
         for i in 0..positions.len() {
-            let mut sum = Vec2::zero();
+            let mut sum = Vec2::ZERO;
             let mut count = 0;
 
             for j in 0..positions.len() {
@@ -111,7 +111,7 @@ impl Boids {
                 }
                 aligns.push(steer);
             } else {
-                aligns.push(Vec2::zero());
+                aligns.push(Vec2::ZERO);
             }
         }
 
@@ -124,7 +124,7 @@ impl Boids {
         let mut cohesions = Vec::new();
 
         for i in 0..positions.len() {
-            let mut sum = Vec2::zero();
+            let mut sum = Vec2::ZERO;
             let mut count = 0;
 
             for j in 0..positions.len() {
@@ -140,7 +140,7 @@ impl Boids {
                 sum /= count as f32;
                 cohesions.push(Boids::seek(sum, positions[i], velocities[i]));
             } else {
-                cohesions.push(Vec2::zero());
+                cohesions.push(Vec2::ZERO);
             }
         }
 

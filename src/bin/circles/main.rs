@@ -1,6 +1,6 @@
 // From https://observablehq.com/@makio135/creative-coding
 
-use bevy::{prelude::*, transform, window};
+use bevy::prelude::*;
 use bevy_prototype_lyon::prelude::*;
 
 /*
@@ -40,35 +40,30 @@ fn hsl_to_rgb(h: f32, s: f32, l: f32) -> (f32, f32, f32) {
     (r + m, g + m, b + m)
 }
 
-fn setup_system(
-    commands: &mut Commands,
-    mut materials: ResMut<Assets<ColorMaterial>>,
-    mut meshes: ResMut<Assets<Mesh>>,
-) {
-    commands
-        .spawn(CameraUiBundle::default())
-        .spawn(Camera2dBundle::default());
+fn setup_system(mut commands: Commands) {
+    commands.spawn(Camera2dBundle::default());
 
     for i in 0..=10 {
         let hsl = hsl_to_rgb(i as f32 * (36.0 / 255.0), 1.0, 0.5);
 
-        let material = materials.add(Color::rgba(hsl.0, hsl.1, hsl.2, 0.6).into());
-        let sprite = primitive(
-            material,
-            &mut meshes,
-            ShapeType::Circle(100.0),
-            TessellationMode::Fill(&FillOptions::default()),
-            Vec3::new(25.0 + i as f32 * 60.0 - (10.0 * 60.0) / 2.0, 0.0, 0.0),
-        );
+        let circle = shapes::Circle {
+            radius: 100.0,
+            center: Vec2::new(25.0 + i as f32 * 60.0 - (10.0 * 60.0) / 2.0, 0.0),
+        };
 
-        commands.spawn(sprite);
+        commands.spawn(GeometryBuilder::build_as(
+            &circle,
+            DrawMode::Fill(FillMode {
+                color: Color::hsl(hsl.0, hsl.1, hsl.2),
+                options: FillOptions::default(),
+            }),
+            Transform::default(),
+        ));
     }
 }
 
 fn circle_update_system(
     time: Res<Time>,
-    // mut materials: ResMut<Assets<ColorMaterial>>,
-    // mut meshes: ResMut<Assets<Mesh>>,
     mut circles: Query<(&Sprite, &mut Transform)>,
     windows: Res<Windows>,
 ) {
@@ -76,7 +71,7 @@ fn circle_update_system(
 
     const TAU: f32 = std::f32::consts::TAU;
     const PI: f32 = std::f32::consts::PI;
-    let elapsed_time = time.seconds_since_startup() as f32;
+    let elapsed_time = time.elapsed_seconds() as f32;
 
     let n = 20.0;
 
@@ -97,10 +92,12 @@ fn circle_update_system(
 }
 
 fn main() {
-    App::build()
+    App::new()
         .add_plugins(DefaultPlugins)
-        .add_resource(ClearColor(Color::BLACK))
-        .add_startup_system(setup_system.system())
-        .add_system(circle_update_system.system())
+        .insert_resource(Msaa { samples: 4 })
+        .insert_resource(ClearColor(Color::BLACK))
+        .add_plugin(ShapePlugin)
+        .add_startup_system(setup_system)
+        .add_system(circle_update_system)
         .run();
 }

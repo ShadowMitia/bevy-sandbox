@@ -169,16 +169,16 @@ impl QuadTree {
     pub fn query_range(&self, range: &AABB) -> Vec<(Vec2, usize)> {
         let mut found = Vec::new();
 
-        if self.boundary.intersects(&range) {
+        if self.boundary.intersects(range) {
             match &self.root {
                 QuadTreeData::Leaf(data) => {
                     found.extend(data.iter().filter(|(p, _)| range.contains(*p)));
                 }
                 QuadTreeData::Node(nodes) => {
-                    found.extend(nodes[0].query_range(&range));
-                    found.extend(nodes[1].query_range(&range));
-                    found.extend(nodes[2].query_range(&range));
-                    found.extend(nodes[3].query_range(&range));
+                    found.extend(nodes[0].query_range(range));
+                    found.extend(nodes[1].query_range(range));
+                    found.extend(nodes[2].query_range(range));
+                    found.extend(nodes[3].query_range(range));
                 }
                 QuadTreeData::Empty => {}
             }
@@ -317,7 +317,6 @@ mod tests {
                 unreachable!();
             }
             if let QuadTreeData::Empty = &data[1].root {
-                
             } else {
                 unreachable!();
             }

@@ -1,21 +1,17 @@
-use bevy::{
-    diagnostic::{FrameTimeDiagnosticsPlugin, PrintDiagnosticsPlugin},
-    prelude::*,
-};
-use bevy_prototype_lyon::{plugin::ShapeDescriptor, prelude::*};
+use bevy::diagnostic::FrameTimeDiagnosticsPlugin;
+use bevy::prelude::*;
 use spatial_partition::{QuadTree, AABB};
 
 mod boids;
 
+#[derive(Component)]
 struct Square;
 
-fn setup(commands: &mut Commands, mut materials: ResMut<Assets<ColorMaterial>>) {
-    commands
-        .spawn(Camera2dBundle::default())
-        .spawn(CameraUiBundle::default());
+fn setup(mut commands: Commands) {
+    commands.spawn(Camera2dBundle::default());
 }
 
-#[derive(Debug)]
+#[derive(Debug, Component)]
 struct Boid {
     id: usize,
 }
@@ -23,18 +19,15 @@ struct Boid {
 mod spatial_partition;
 
 fn boids_system(
-    commands: &mut Commands,
-    mut materials: ResMut<Assets<ColorMaterial>>,
+    mut commands: Commands,
     mut boids: Local<boids::Boids>,
-    time: Res<Time>,
     // mut boids_partition: ResMut<QuadTree>,
     mut boid_sprites: Query<(&Boid, &mut Transform)>,
-    mut squares: Query<&Transform, With<Square>>,
     windows: Res<Windows>,
 ) {
     const NUM_BOIDS: usize = 100;
 
-    let mut boids_partition = QuadTree::new(AABB::new(Vec2::zero(), Vec2::new(800.0, 800.0)));
+    let mut boids_partition = QuadTree::new(AABB::new(Vec2::ZERO, Vec2::new(800.0, 800.0)));
 
     if boids.size() < 10 {
         let width = 4.0;
@@ -57,14 +50,18 @@ fn boids_system(
 
             boids_partition.insert(Vec2::new(x, y), i);
 
-            commands
-                .spawn(SpriteBundle {
-                    sprite: Sprite::new(Vec2::new(width as f32, height as f32)),
-                    material: materials.add(ColorMaterial::color(Color::RED)),
+            commands.spawn((
+                SpriteBundle {
+                    sprite: Sprite {
+                        custom_size: Some(Vec2::new(width as f32, height as f32)),
+                        color: Color::RED,
+                        ..Default::default()
+                    },
                     transform: Transform::from_translation(Vec3::new(x, y, 0.0)),
                     ..Default::default()
-                })
-                .with(Boid { id: i });
+                },
+                Boid { id: i },
+            ));
         }
     } else {
         for i in 0..boids.positions.len() {
@@ -101,7 +98,7 @@ fn boids_system(
     let half_window_height = window.height() / 2.0;
 
     let mut new_accelerations = Vec::new();
-    new_accelerations.resize_with(boids.accelerations.len(), Vec2::zero);
+    new_accelerations.resize_with(boids.accelerations.len(), || Vec2::ZERO);
 
     for id in 0..boids.size() {
         let boid = boids.positions[id];
@@ -200,15 +197,14 @@ fn boids_system(
     }
 }
 
-#[bevy_main]
 fn main() {
-    App::build()
+    App::new()
         .add_plugins(DefaultPlugins)
         // .add_plugin(ShapePlugin)
         // // Adds frame time diagnostics
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
         // // Adds a system that prints diagnostics to the console
-        .add_plugin(PrintDiagnosticsPlugin::default())
+        //        .add_plugin(PrintDiagnosticsPlugin::default())
         // // Any plugin can register diagnostics
         // // Uncomment this to add some render resource diagnostics:
         // .add_plugin(bevy::wgpu::diagnostic::WgpuResourceDiagnosticsPlugin::default())
@@ -219,7 +215,7 @@ fn main() {
         //     ColorMaterial,
         // >::default())
         // .add_resource(QuadTree::new(AABB::new(Vec2::zero(), Vec2::new(800.0, 800.0))) as QuadTree)
-        .add_startup_system(setup.system())
-        .add_system(boids_system.system())
+        .add_startup_system(setup)
+        .add_system(boids_system)
         .run();
 }
